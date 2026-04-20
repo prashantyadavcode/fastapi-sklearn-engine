@@ -1,0 +1,23 @@
+artifact_path: /Users/kaidoko/Movies/Mobile/ML/scikit-learn-pipeline/mlruns/1/models/m-086ea8b5464c4e90980c239d8427020b/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.14.3
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.11.1
+model_id: m-086ea8b5464c4e90980c239d8427020b
+model_size_bytes: 4809
+model_uuid: m-086ea8b5464c4e90980c239d8427020b
+prompts: null
+run_id: 353e4b6f07934f8f858b9c7a1652f1a0
+utc_time_created: '2026-04-20 10:09:10.109801'

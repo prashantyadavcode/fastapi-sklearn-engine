@@ -2,6 +2,9 @@
 # ADVANCED SKLEARN PIPELINE WITH MLFLOW
 # =====================================
 
+
+
+
 # IMPORT LIBRARIES
 import pandas as pd
 import numpy as np
@@ -14,27 +17,35 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline as SkPipeline
+
 import joblib
 
 # MLflow
 import mlflow
 import mlflow.sklearn
 
+# Tracking URI of MLFLOW
+
+print("Tracking URI:", mlflow.get_tracking_uri())
+
 # =====================================
 # DATASET
 # =====================================
-data = {
-    "Age": [25, 45, 35, 23, 52, 40, 28, 33, 48, 50, 37, 29, 41, 30, 55],
-    "Salary": [50000, 80000, 60000, 30000, 90000, 70000, 45000, 52000, 85000, 95000, 62000, 48000, 78000, 54000, 100000],
-    "City": ["Delhi", "Mumbai", "Delhi", "Chennai", "Mumbai", "Delhi", "Chennai", "Delhi", "Mumbai", "Mumbai", "Delhi", "Chennai", "Mumbai", "Delhi", "Mumbai"],
-    "Gender": ["M", "F", "M", "F", "F", "M", "M", "F", "M", "F", "M", "F", "M", "F", "M"],
-    "Churn": [0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1]
-}
+data = pd.read_csv('data/telco_customer_churn.csv')
 
 df = pd.DataFrame(data)
 
+
+
+df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors = 'coerce')
+df = df.dropna()
+
+df = df.drop('customerID', axis = 1)
+
 X = df.drop("Churn", axis=1)
-y = df["Churn"]
+y = df["Churn"].map({'Yes': 1, 'No': 0})
 
 # =====================================
 # TRAIN-TEST SPLIT
@@ -46,13 +57,30 @@ X_train, X_test, y_train, y_test = train_test_split(
 # =====================================
 # PREPROCESSING
 # =====================================
-num_features = ["Age", "Salary"]
-cat_features = ["City", "Gender"]
+num_features = ["tenure", "MonthlyCharges", "TotalCharges"]
+
+cat_features = [
+    "gender", "SeniorCitizen", "Partner", "Dependents",
+    "PhoneService", "MultipleLines", "InternetService",
+    "OnlineSecurity", "OnlineBackup", "DeviceProtection",
+    "TechSupport", "StreamingTV", "StreamingMovies",
+    "Contract", "PaperlessBilling", "PaymentMethod"
+]
+
+num_pipeline = SkPipeline([
+    ('imputer', SimpleImputer(strategy = 'median')),
+    ('scaler', StandardScaler())
+])
+
+cat_pipeline = SkPipeline([
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('encoder', OneHotEncoder(handle_unknown = 'ignore'))
+])
 
 preprocessor = ColumnTransformer(
-    transformers=[
-        ("num", StandardScaler(), num_features),
-        ("cat", OneHotEncoder(handle_unknown="ignore"), cat_features)
+    transformers = [
+        ('num', num_pipeline, num_features),
+        ('cat', cat_pipeline, cat_features)
     ]
 )
 
@@ -156,8 +184,9 @@ with mlflow.start_run():
         print("\nFeature Coefficients:\n", coef_df)
 
 # =====================================
-# SAVE MODEL LOCALLY
+# SAVE MODEL LOCALLY 
 # =====================================
-joblib.dump(best_model, "churn_model.pkl")
+# joblib.dump(best_model, "churn_model.pkl")
 
-print("\nModel saved as churn_model.pkl")
+# print("\nModel saved as churn_model.pkl")
+
