@@ -2,9 +2,6 @@
 # ADVANCED SKLEARN PIPELINE WITH MLFLOW
 # =====================================
 
-
-
-
 # IMPORT LIBRARIES
 import pandas as pd
 import numpy as np
@@ -22,11 +19,17 @@ from sklearn.pipeline import Pipeline as SkPipeline
 
 import joblib
 
+import os
+os.makedirs('outputs', exist_ok = True)
+
 # MLflow
 import mlflow
 import mlflow.sklearn
 
 # Tracking URI of MLFLOW
+
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
+mlflow.set_experiment("Churn Prediction Pipeline")
 
 print("Tracking URI:", mlflow.get_tracking_uri())
 
@@ -147,6 +150,30 @@ with mlflow.start_run():
     print("\nFinal Accuracy:", acc)
     print("\nClassification Report:\n", classification_report(y_test, y_pred))
 
+    from sklearn.metrics import roc_auc_score, confusion_matrix
+
+    # ROC-AUC
+    roc = roc_auc_score(y_test, best_model.predict_proba(X_test)[:, 1])
+    print('ROC-AUC: ', roc)
+
+    roc_df = pd.DataFrame({'ROC-AUC': [roc]})
+    roc_df.to_csv('outputs/roc_auc.csv', index = False)
+    mlflow.log_artifact('outputs/roc_auc.csv')
+
+    # Confusion Matrix
+    cm = confusion_matrix(y_test, y_pred)
+    print('Confusion Matrix: ', cm)
+
+    cm_df = pd.DataFrame(cm,
+                         columns = ['Predicted_No', 'Predicted_Yes'],
+                         index = ['Actual_No', 'Actual_Yes'])
+    
+    cm_df.to_csv('outputs/confusion_matrix.csv', index = True)
+    mlflow.log_artifact('outputs/confusion_matrix.csv')
+
+    # Log to MLFlow
+    mlflow.log_metric('roc_auc', roc)
+
     # =====================================
     # LOGGING TO MLFLOW
     # =====================================
@@ -174,6 +201,9 @@ with mlflow.start_run():
 
         print("\nFeature Importance:\n", feature_importance_df)
 
+        feature_importance_df.to_csv('outputs/feature_importance.csv', index = False)
+        mlflow.log_artifact('outputs/feature_importance.csv')
+
     # Logistic Regression
     if hasattr(model, "coef_"):
         coef_df = pd.DataFrame({
@@ -183,10 +213,13 @@ with mlflow.start_run():
 
         print("\nFeature Coefficients:\n", coef_df)
 
+        coef_df.to_csv('outputs/logistic_coefficients.csv', index = False)
+        mlflow.log_artifact('outputs/logistic_coefficients.csv')
+
 # =====================================
 # SAVE MODEL LOCALLY 
 # =====================================
-# joblib.dump(best_model, "churn_model.pkl")
+joblib.dump(best_model, "churn_model.pkl")
 
-# print("\nModel saved as churn_model.pkl")
+print("\nModel saved as churn_model.pkl")
 
